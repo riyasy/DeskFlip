@@ -11,6 +11,7 @@ RAM, no telemetry.
 ## 🎬 Preview
 
 <!-- Drop a screen recording or screenshot here -->
+<img width="1280" height="800" alt="Screenshot (127)" src="https://github.com/user-attachments/assets/36b2db8a-44e7-42ac-b1c4-d43e2cae575b" />
 
 ---
 
