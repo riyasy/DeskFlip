@@ -79,20 +79,14 @@ static Settings g_settings;
 // on uninstall. In Roaming it is the real folder either way, so an uninstalled Store app would
 // leave its settings behind for good -- and would sync them to a machine whose copy of the app
 // might not be installed at all. Loose, this is the real folder and nothing changes.
+//
+// This was %APPDATA% until the first Store submission. Nothing migrates the old file, because no
+// build that wrote one was ever shipped.
 static const wchar_t* IniPath() {
     static wchar_t path[MAX_PATH] = L"";
     if (!path[0]) {
         if (FAILED(SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA, nullptr, 0, path))) return nullptr;
         wcscat_s(path, L"\\DeskFlip.ini");
-        // The file used to live in Roaming: move an existing one over rather than starting the
-        // user from defaults. MoveFileW refuses when the destination exists, which is exactly the
-        // "only if we have nothing yet" test, and fails harmlessly when there is nothing to move.
-        // Drop this once nobody runs a build older than it.
-        wchar_t legacy[MAX_PATH];
-        if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, legacy))) {
-            wcscat_s(legacy, L"\\DeskFlip.ini");
-            MoveFileW(legacy, path);
-        }
     }
     return path;
 }
