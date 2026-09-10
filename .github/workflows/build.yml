@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            platform: x64
+            arch: x64
+            out_dir: x64/Release/
+          - runner: windows-11-arm
+            platform: ARM64
+            arch: ARM64
+            out_dir: ARM64/Release/
+          - runner: windows-latest
+            platform: x86
+            arch: x86
+            out_dir: Win32/Release/
+
+    runs-on: ${{ matrix.runner }}
+    name: Build (${{ matrix.arch }})
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # /t:DeskFlip, or the solution's MSIX project builds the exe three times over.
+      - name: Build DeskFlip
+        run: |
+          msbuild src\DeskFlip.slnx /t:DeskFlip /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeskFlip-${{ matrix.arch }}
+          path: |
+            src/${{ matrix.out_dir }}DeskFlip.exe
+            src/${{ matrix.out_dir }}lang
