@@ -9,7 +9,7 @@ This file describes the licensing terms for
 Copyright (C) 2026 RYF Tools
 
 ------------------------------------------------------------
-SECTION 1 ??? SOURCE CODE LICENSE
+SECTION 1 - SOURCE CODE LICENSE
 ------------------------------------------------------------
 
 The DeskFlip source code is licensed under the GNU General Public
@@ -693,7 +693,7 @@ Public License instead of this License.  But first, please read
 <https://www.gnu.org/licenses/why-not-lgpl.html>.
 
 ------------------------------------------------------------
-SECTION 2 ??? BINARY DISTRIBUTION TERMS
+SECTION 2 - BINARY DISTRIBUTION TERMS
 ------------------------------------------------------------
 
 Binaries of DeskFlip are subject to the following terms:
@@ -706,7 +706,7 @@ Binaries of DeskFlip are subject to the following terms:
   granted by the GPL to the source code.
 
 ------------------------------------------------------------
-SECTION 3 ??? TRADEMARK AND BRANDING
+SECTION 3 - TRADEMARK AND BRANDING
 ------------------------------------------------------------
 
 "DeskFlip" and the DeskFlip logo are identifiers of this project.

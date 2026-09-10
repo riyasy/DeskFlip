@@ -82,6 +82,11 @@
     <Content Include="..\DeskFlip\lang\*.ini">
       <Link>DeskFlip\lang\%(Filename)%(Extension)</Link>
     </Content>
+    <!-- DeskFlip's own terms, so the package carries what the release zip carries. GPLv3 section 4
+         asks that a copy travel with the program, and the zip has had one since v1.0.1. -->
+    <Content Include="..\..\LICENSE">
+      <Link>DeskFlip\LICENSE</Link>
+    </Content>
   </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
   <ItemGroup>
