@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity type="win32" name="DeskFlip" version="1.0.0.0" processorArchitecture="*"/>
+  <!-- Nothing binds to this identity, but a manifest claiming a version the exe's VERSIONINFO
+       does not is the kind of small inconsistency a scanner notices. Third hand-kept copy of
+       DeskFlip\resource.h's VER_NUMBER, after Package.appxmanifest's Identity Version. -->
+  <assemblyIdentity type="win32" name="DeskFlip" version="1.0.1.0" processorArchitecture="*"/>
 
   <!-- Common Controls v6: the themed dialog, and the side-by-side assembly that comctl32's
        modern exports (LoadIconMetric among them) live in. Without this the process loads v5

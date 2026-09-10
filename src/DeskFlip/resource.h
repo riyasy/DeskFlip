@@ -14,9 +14,9 @@
 // RC only understands #define, so nothing but #define may appear above.
 //
 // Keep in step with Package.appxmanifest's Identity Version by hand; XML cannot include a header.
-#define VER_NUMBER      1,0,0,0             // VERSIONINFO wants commas
-#define VER_STRING      "1.0.0.0"           // and a matching string
-#define VER_DISPLAY     "v1.0.0"            // what a person reads, in the About box
+#define VER_NUMBER      1,0,1,0             // VERSIONINFO wants commas
+#define VER_STRING      "1.0.1.0"           // and a matching string
+#define VER_DISPLAY     "v1.0.1"            // what a person reads, in the About box
 
 #define VER_COMPANY     "RYF Tools"
 #define VER_PRODUCT     "DeskFlip"
