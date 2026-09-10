@@ -25,8 +25,8 @@ gh run list --limit 1                      # wait for "completed success", ~2 mi
 ```
 
 The matrix is x64 and x86 on `windows-latest`, ARM64 on `windows-11-arm`. Artifacts come out named
-`DeskFlip_v<version>_<arch>` and already contain everything: `DeskFlip.exe`, `lang\` and `assets\`
-(the font is committed, so nothing is added by hand any more).
+`DeskFlip_v<version>_<arch>` and already contain everything: `DeskFlip.exe`, `LICENSE`, `lang\` and
+`assets\` (font plus its OFL). Nothing is added by hand any more.
 
 Do not build locally for a release. The point of CI is that ARM64 is built on ARM64.
 
@@ -38,7 +38,6 @@ gh run download <run-id> -D "$s\rel"
 
 foreach ($a in 'x64','ARM64','x86') {
   $d = "$s\rel\DeskFlip_v1.0.1_$a"
-  Copy-Item LICENSE "$d\"
   Compress-Archive -Path "$d\*" -DestinationPath "$s\rel\DeskFlip_v1.0.1_$a.zip" -Force
 }
 ```

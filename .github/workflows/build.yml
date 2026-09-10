@@ -45,11 +45,19 @@ jobs:
         run: |
           msbuild src\DeskFlip.slnx /t:DeskFlip /p:Configuration=Release /p:Platform=${{ matrix.platform }}
 
+      # Copied into the output folder rather than added to the upload paths below: the artifact's
+      # root is the least common ancestor of everything it matches, so naming the repo-root LICENSE
+      # would nest the whole download under src\<platform>\Release\.
+      - name: Stage LICENSE
+        shell: pwsh
+        run: Copy-Item LICENSE src\${{ matrix.out_dir }}
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: DeskFlip_${{ steps.ver.outputs.ver }}_${{ matrix.arch }}
           path: |
             src/${{ matrix.out_dir }}DeskFlip.exe
+            src/${{ matrix.out_dir }}LICENSE
             src/${{ matrix.out_dir }}lang
             src/${{ matrix.out_dir }}assets
