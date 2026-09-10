@@ -70,13 +70,29 @@ struct Settings {
 };
 static Settings g_settings;
 
-// %APPDATA%\DeskFlip.ini, same place and same WritePrivateProfileString mechanism let-it-rain
-// uses. A handful of ints do not justify a format with a parser.
+// %LOCALAPPDATA%\DeskFlip.ini, the same place DeskTick keeps its own, and the same
+// WritePrivateProfileString mechanism let-it-rain uses. A handful of ints do not justify a format
+// with a parser.
+//
+// Local rather than Roaming, and that is the packaged build's doing: the MSIX container redirects
+// %LOCALAPPDATA% into the package's own LocalCache, so the file is the package's and goes with it
+// on uninstall. In Roaming it is the real folder either way, so an uninstalled Store app would
+// leave its settings behind for good -- and would sync them to a machine whose copy of the app
+// might not be installed at all. Loose, this is the real folder and nothing changes.
 static const wchar_t* IniPath() {
     static wchar_t path[MAX_PATH] = L"";
     if (!path[0]) {
-        if (FAILED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, path))) return nullptr;
+        if (FAILED(SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA, nullptr, 0, path))) return nullptr;
         wcscat_s(path, L"\\DeskFlip.ini");
+        // The file used to live in Roaming: move an existing one over rather than starting the
+        // user from defaults. MoveFileW refuses when the destination exists, which is exactly the
+        // "only if we have nothing yet" test, and fails harmlessly when there is nothing to move.
+        // Drop this once nobody runs a build older than it.
+        wchar_t legacy[MAX_PATH];
+        if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, legacy))) {
+            wcscat_s(legacy, L"\\DeskFlip.ini");
+            MoveFileW(legacy, path);
+        }
     }
     return path;
 }

@@ -75,7 +75,7 @@ The right-click menu is the entire interface. There is no settings window to lea
 - **About DeskFlip...**
 - **Exit**
 
-Everything is saved to `%APPDATA%\DeskFlip.ini`.
+Everything is saved to `%LOCALAPPDATA%\DeskFlip.ini`.
 
 ---
 
