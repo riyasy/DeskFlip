@@ -32,6 +32,14 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      # resource.h is the one place the version lives; don't repeat it here.
+      - name: Read version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = (Select-String src\DeskFlip\resource.h -Pattern '#define VER_DISPLAY\s+"(.+)"').Matches[0].Groups[1].Value
+          "ver=$v" >> $env:GITHUB_OUTPUT
+
       # /t:DeskFlip, or the solution's MSIX project builds the exe three times over.
       - name: Build DeskFlip
         run: |
@@ -40,7 +48,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DeskFlip-${{ matrix.arch }}
+          name: DeskFlip_${{ steps.ver.outputs.ver }}_${{ matrix.arch }}
           path: |
             src/${{ matrix.out_dir }}DeskFlip.exe
             src/${{ matrix.out_dir }}lang
