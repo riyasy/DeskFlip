@@ -55,7 +55,7 @@ RAM, no telemetry.
 
 ## 🚀 Installation
 
-- Option 1 : [**Install from Microsoft Store**](https://apps.microsoft.com/detail/9MSXBKV3295F?launch=true&cid=GitHubRelease&mode=full)
+- Option 1 : [**Install from Microsoft Store**](https://apps.microsoft.com/detail/9MSXBKV3295F?launch=true&cid=from_github&mode=full)
 - Option 2 : Download the portable exe from the Github [**Releases Page**](https://github.com/riyasy/DeskFlip/releases)
 - Option 3 : Build it yourself (see below)
 
