@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Three platforms because the MSIX bundles three. Win32 is what MSBuild calls x86; the
+       Desktop Bridge maps the bundle's "x86" onto it. Every setting below is keyed on
+       Configuration alone, so the platforms need no per-platform block of their own. -->
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7A1C4E2B-9D3F-4A85-B6E1-2C8F0D5A7E93}</ProjectGuid>
+    <RootNamespace>DeskFlip</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
+    <UseDebugLibraries Condition="'$(Configuration)'=='Release'">false</UseDebugLibraries>
+    <WholeProgramOptimization Condition="'$(Configuration)'=='Release'">true</WholeProgramOptimization>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <!-- C++20 for C++/WinRT's sake, not the language's: under C++17 its blocking `get()` pulls
+           in <experimental/coroutine>, which this toolset now refuses to compile at all. Nothing
+           in the clock needs anything newer than 17. -->
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <!-- Stated rather than left to the toolset's default: C++/WinRT (the packaged half of
+           "Start with Windows") is written with try/catch and will not compile without it. -->
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>UNICODE;_UNICODE;NOMINMAX;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <!-- Two flags an unsigned binary needs, both about what a scanner sees:
+           /PDBALTPATH:%_PDB% stores just "DeskFlip.pdb" in the debug directory instead of the
+           full path of the machine that built it. That path is a privacy leak and something
+           heuristics score against you, and it buys nothing: nobody debugging a release build
+           has that folder anyway.
+           /Brepro drops the link timestamp, so two builds of the same source produce the same
+           bytes and anyone can rebuild a release and compare hashes.
+           Release only, deliberately: a local Debug build wants its real PDB path.
+           %_PDB% is the linker's own token, not an MSBuild property: % followed by anything
+           that is not two hex digits passes through untouched. -->
+      <AdditionalOptions>/PDBALTPATH:%_PDB% /Brepro %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="clockwindow.cpp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ClInclude Include="clockwindow.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ResourceCompile Include="DeskFlip.rc" />
+    <Manifest Include="DeskFlip.manifest" />
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+
+  <!-- Both folders are read from disk at runtime rather than embedded, so both have to sit beside
+       the exe: the font because a missing .ttf should cost you the typeface and not the build,
+       and lang\ because a translation is a file a user can drop in or edit. Neither is a build
+       output, which is also why the .wapproj has to name them again for the MSIX. -->
+  <Target Name="CopyAssets" AfterTargets="Build">
+    <Exec Condition="Exists('$(ProjectDir)assets')"
+          Command="xcopy /Y /I /Q &quot;$(ProjectDir)assets\*&quot; &quot;$(OutDir)assets\&quot;" />
+    <Exec Condition="Exists('$(ProjectDir)lang')"
+          Command="xcopy /Y /I /Q &quot;$(ProjectDir)lang\*&quot; &quot;$(OutDir)lang\&quot;" />
+  </Target>
+</Project>

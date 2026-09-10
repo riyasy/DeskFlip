@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '15.0'">
+    <VisualStudioVersion>15.0</VisualStudioVersion>
+  </PropertyGroup>
+  <!-- The three platforms must exist in DeskFlip.vcxproj too, or the bundle cannot build its own
+       payload. "x86" here is that project's "Win32"; the Desktop Bridge maps the two. -->
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x86">
+      <Configuration>Debug</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x86">
+      <Configuration>Release</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup>
+    <WapProjPath Condition="'$(WapProjPath)'==''">$(MSBuildExtensionsPath)\Microsoft\DesktopBridge\</WapProjPath>
+  </PropertyGroup>
+  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.props" />
+  <PropertyGroup>
+    <ProjectGuid>8d5b1f47-0c2a-4b96-9f31-6ea4c7d0b512</ProjectGuid>
+    <TargetPlatformVersion>10.0.26100.0</TargetPlatformVersion>
+    <!-- The same floor Package.appxmanifest declares. -->
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Unsigned: the Store re-signs on upload. Sideloading a build from here needs a certificate
+         of your own, or a Debug build, which the temporary store certificate covers. -->
+    <AppxPackageSigningEnabled>False</AppxPackageSigningEnabled>
+    <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+    <AppxBundlePlatforms>x86|x64|arm64</AppxBundlePlatforms>
+    <AppxBundle>Always</AppxBundle>
+    <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
+    <GenerateTestArtifacts>True</GenerateTestArtifacts>
+    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
+    <EntryPointProjectUniqueName>..\DeskFlip\DeskFlip.vcxproj</EntryPointProjectUniqueName>
+  </PropertyGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest">
+      <SubType>Designer</SubType>
+    </AppxManifest>
+  </ItemGroup>
+  <!-- The tile art, as a glob rather than a line per file: what is in the folder is what ships,
+       so regenerating it is never a project edit. -->
+  <ItemGroup>
+    <Content Include="Images\*.png" />
+    <None Include="Package.StoreAssociation.xml" />
+  </ItemGroup>
+  <!-- The font. DesktopBridge packages the referenced project's build *outputs*, and assets\ is
+       not one: the .vcxproj xcopies it beside the exe after the link, and the exe finds it by
+       its own module path at runtime (Clock::LoadFont). So it has to be named here, and the Link
+       is what puts it beside the exe inside the package's DeskFlip\ folder, where that same
+       lookup finds it. Without this the packaged clock silently falls back to Cascadia Mono.
+       The glob matches nothing when the .ttf has not been dropped in (it is not in the repo;
+       see DeskFlip\assets\README.md), which is harmless. -->
+  <ItemGroup>
+    <Content Include="..\DeskFlip\assets\*.ttf">
+      <Link>DeskFlip\assets\%(Filename)%(Extension)</Link>
+    </Content>
+    <!-- The translations, same story: LocInit reads lang\ from the exe's own folder, so they have
+         to land beside it inside the package. Without this the MSIX ships English-only. -->
+    <Content Include="..\DeskFlip\lang\*.ini">
+      <Link>DeskFlip\lang\%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\DeskFlip\DeskFlip.vcxproj" />
+  </ItemGroup>
+</Project>

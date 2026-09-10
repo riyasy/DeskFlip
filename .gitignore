@@ -1,0 +1,41 @@
+# Visual Studio / MSBuild build output
+[Xx]64/
+[Dd]ebug/
+[Rr]elease/
+.vs/
+*.obj
+*.pdb
+*.ilk
+*.exe
+*.iobj
+*.ipdb
+*.tlog
+*.log
+*.user
+*.aps
+
+# MSIX packaging output. The package, the sideload helper scripts and the bundle
+# manifests are all rebuilt from the .wapproj; only Package.appxmanifest and the
+# tile art are source.
+src/DeskFlipInstallerMSIX/AppPackages/
+src/DeskFlipInstallerMSIX/BundleArtifacts/
+src/DeskFlipInstallerMSIX/bin/
+src/DeskFlipInstallerMSIX/obj/
+*.appx
+*.msix
+*.msixbundle
+*.msixupload
+*.appxrecipe
+*.assets.cache
+
+# The font is a build input you supply yourself, not source. See
+# src/DeskFlip/assets/README.md
+*.ttf
+
+# Kept local, not published. The Store association is written by Visual Studio's
+# "Associate App with the Store" and carries the publisher id and reserved names;
+# the .wapproj still names it, and a missing <None> item does not break the build.
+src/DeskFlipInstallerMSIX/Package.StoreAssociation.xml
+
+# Working notes for Claude Code, not part of the shipped repo.
+CLAUDE.md

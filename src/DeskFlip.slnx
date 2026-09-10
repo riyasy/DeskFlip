@@ -1,0 +1,11 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="DeskFlip/DeskFlip.vcxproj" Id="7a1c4e2b-9d3f-4a85-b6e1-2c8f0d5a7e93" />
+  <Project Path="DeskFlipInstallerMSIX/deskflip-msix.wapproj" Type="c7167f0d-bc9f-4e6e-afe1-012c56b48db5">
+    <Deploy />
+  </Project>
+</Solution>
