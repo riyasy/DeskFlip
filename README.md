@@ -96,8 +96,8 @@ msbuild src\DeskFlip.slnx /t:DeskFlip /p:Configuration=Release /p:Platform=x64
 ```
 
 The solution is the XML `.slnx` format - VS 2022 17.14+ / MSBuild 17.13+ is needed to read it.
-`assets\JetBrainsMono-ExtraBold.ttf` is not in the repo; see `src\DeskFlip\assets\README.md`.
-Without it the clock falls back to Cascadia Mono.
+`assets\JetBrainsMono-ExtraBold.ttf` ships in the repo under the SIL Open Font License and is
+copied beside the exe by the build.
 
 ---
 

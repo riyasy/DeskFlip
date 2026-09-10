@@ -72,10 +72,9 @@
        its own module path at runtime (Clock::LoadFont). So it has to be named here, and the Link
        is what puts it beside the exe inside the package's DeskFlip\ folder, where that same
        lookup finds it. Without this the packaged clock silently falls back to Cascadia Mono.
-       The glob matches nothing when the .ttf has not been dropped in (it is not in the repo;
-       see DeskFlip\assets\README.md), which is harmless. -->
+       The .txt is the font's OFL licence, which has to travel with it. -->
   <ItemGroup>
-    <Content Include="..\DeskFlip\assets\*.ttf">
+    <Content Include="..\DeskFlip\assets\*.ttf;..\DeskFlip\assets\*.txt">
       <Link>DeskFlip\assets\%(Filename)%(Extension)</Link>
     </Content>
     <!-- The translations, same story: LocInit reads lang\ from the exe's own folder, so they have

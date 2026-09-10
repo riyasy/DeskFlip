@@ -28,10 +28,6 @@ src/DeskFlipInstallerMSIX/obj/
 *.appxrecipe
 *.assets.cache
 
-# The font is a build input you supply yourself, not source. See
-# src/DeskFlip/assets/README.md
-*.ttf
-
 # Kept local, not published. The Store association is written by Visual Studio's
 # "Associate App with the Store" and carries the publisher id and reserved names;
 # the .wapproj still names it, and a missing <None> item does not break the build.
