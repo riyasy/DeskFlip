@@ -133,6 +133,23 @@
     <Manifest Include="DeskFlip.manifest" />
   </ItemGroup>
 
+  <!-- Nothing below is built; the items are here so every file shows in Solution Explorer. The
+       icons are compiled in through DeskFlip.rc, the font is copied by CopyAssets, and the
+       Localization sources feed build.ps1. -->
+  <ItemGroup>
+    <Image Include="res\deskflip.ico" />
+    <Image Include="res\desktick.ico" />
+    <Image Include="res\flyphotos.ico" />
+    <Image Include="res\letitrain.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Text Include="assets\JetBrainsMono-OFL.txt" />
+    <Text Include="Localization\translations.csv" />
+    <None Include="assets\JetBrainsMono-ExtraBold.ttf" />
+    <None Include="Localization\build.ps1" />
+  </ItemGroup>
+
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 
   <!-- The font is read from disk at runtime rather than embedded, so a missing .ttf costs you the

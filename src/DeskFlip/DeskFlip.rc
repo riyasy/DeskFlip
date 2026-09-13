@@ -43,7 +43,7 @@ END
 
 // The app/tray icon, carried over from let-it-rain. It has the lowest id on purpose -- see
 // resource.h.
-IDI_DESKFLIP   ICON    "deskflip.ico"
+IDI_DESKFLIP   ICON    "res\\deskflip.ico"
 
 // The About box's "Other apps" list. Each wraps a single 48x48 PNG frame taken from that app's
 // own MSIX Square44x44Logo, kept as an icon rather than raw PNG data so LoadImageW can pick a
