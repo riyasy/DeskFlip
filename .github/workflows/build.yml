@@ -59,5 +59,4 @@ jobs:
           path: |
             src/${{ matrix.out_dir }}DeskFlip.exe
             src/${{ matrix.out_dir }}LICENSE
-            src/${{ matrix.out_dir }}lang
             src/${{ matrix.out_dir }}assets

@@ -11,6 +11,7 @@
 // the next second boundary; a flip blocks on DXGI's frame-latency object inside Render().
 
 #include "clockwindow.h"
+#include "loc.h"
 #include "resource.h"
 
 #include <appmodel.h>  // GetCurrentPackageFullName -- packaged or loose exe
@@ -138,122 +139,6 @@ static void SaveSettings() {
     put(L"ScalePct", g_settings.scalePct);
     put(L"PosX", g_settings.posX);
     put(L"PosY", g_settings.posY);
-}
-
-// ---------------------------------------------------------------------------
-// The UI language
-// ---------------------------------------------------------------------------
-// The English string is the key. No numeric ids, no resource.h, nothing to keep in sync, and a
-// missing key answers itself -- so a half-translated file is a working file and English is the
-// fallback for free. The cost is that the English literal at each call site is now an identifier:
-// editing one silently drops its translations.
-//
-// Storage is lang\<locale>.ini, read with GetPrivateProfileSectionW -- one call returns the whole
-// [Strings] section as a double-null-terminated block of key=value, which is a parser we then do
-// not write. Same API the settings file already uses, so this adds no dependency.
-//
-// **The files must be UTF-16LE with a BOM.** The profile APIs decide the encoding from the BOM
-// alone; without one they read the file in the system codepage and every CJK and Cyrillic string
-// arrives as mojibake, silently, with the file looking perfectly correct in an editor. Nothing
-// here ever writes to them, so the API cannot rewrite one as ANSI behind us.
-//
-// Only the chrome goes through this -- the menu and the About box. The one string that does not
-// is the fatal "Direct3D initialisation failed" box, which is a developer-facing dead end rather
-// than UI, and the app names in OTHER_APPS, which are products rather than copy.
-static wchar_t g_strings[8192];  // whole file, keys included; the UI is 15 short strings
-
-// lang\, beside the exe. The .vcxproj copies the folder next to the binary after the link, the
-// same way it does assets\, so there is no walk up out of a build tree to do.
-static const wchar_t* LangDir() {
-    static wchar_t dir[MAX_PATH] = L"";
-    if (!dir[0]) {
-        GetModuleFileNameW(nullptr, dir, MAX_PATH);
-        if (wchar_t* slash = wcsrchr(dir, L'\\')) *slash = 0;
-        wcscat_s(dir, L"\\lang");
-    }
-    return dir;
-}
-
-// Try one lang\<name>.ini. False if it isn't there or holds no [Strings].
-static bool LoadLang(const wchar_t* name) {
-    wchar_t path[MAX_PATH];
-    if (swprintf_s(path, L"%s\\%s.ini", LangDir(), name) < 0) return false;
-    if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES) return false;
-    // Returns characters copied, not counting the final null. Zero means no such section, or an
-    // empty one -- either way there is nothing to use.
-    if (GetPrivateProfileSectionW(L"Strings", g_strings, _countof(g_strings), path) == 0) {
-        g_strings[0] = 0;
-        return false;
-    }
-    return true;
-}
-
-// Last resort for one language: any lang\<prefix>-*.ini at all. This is what serves the regional
-// variants nobody ships a file for -- es-MX, es-AR and es-CO all land on es-ES.ini, de-AT and
-// de-CH on de-DE.ini. Without it every one of those users would get English while a translation
-// of their own language sat unread in the folder.
-//
-// It resolves by directory order, which picks the *language* right and can pick the *flavour*
-// wrong: zh-HK takes zh-CN.ini because zh-CN sorts first. The fix is one file and no code --
-// the full-name tier is tried before this is reached, so dropping in a zh-HK.ini overrides it.
-static bool LoadLangByPrefix(const wchar_t* prefix) {
-    wchar_t pat[MAX_PATH];
-    if (swprintf_s(pat, L"%s\\%s-*.ini", LangDir(), prefix) < 0) return false;
-    WIN32_FIND_DATAW fd;
-    HANDLE h = FindFirstFileW(pat, &fd);
-    if (h == INVALID_HANDLE_VALUE) return false;
-    bool ok = false;
-    do {
-        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
-        if (wchar_t* dot = wcsrchr(fd.cFileName, L'.')) *dot = 0;  // LoadLang appends .ini itself
-        ok = LoadLang(fd.cFileName);
-    } while (!ok && FindNextFileW(h, &fd));
-    FindClose(h);
-    return ok;
-}
-
-static void LocInit() {
-    // The user's *display language* chain, most preferred first -- NOT GetUserDefaultLocaleName,
-    // which is the Region setting and answers a different question. The two genuinely differ in
-    // the field, and reading the region to pick the UI language gets it wrong in both directions.
-    //
-    // The chain matters as much as the name: Windows answers e.g. "de-AT" -> "de" -> "de-DE", and
-    // following it is how a language pack we have no exact file for still resolves to one we do.
-    wchar_t langs[512] = { 0 };
-    ULONG count = 0, cch = _countof(langs);
-    if (!GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &count, langs, &cch)) return;
-
-    // Every tier for one language before moving to the next, which is the whole point of a
-    // preference order: a de-AT primary must reach de-DE.ini before an en-US secondary is even
-    // considered. Full name first, and that is load-bearing rather than tidy -- pt-PT/pt-BR and
-    // zh-CN/zh-TW are different files, and going straight to the "pt" or "zh" prefix would hand
-    // half of those users the other half's translation.
-    for (const wchar_t* p = langs; *p; p += wcslen(p) + 1) {
-        wchar_t name[LOCALE_NAME_MAX_LENGTH];
-        if (wcscpy_s(name, p) != 0) continue;
-        if (LoadLang(name)) return;                     // de-DE.ini
-        wchar_t* dash = wcschr(name, L'-');
-        if (!dash) continue;
-        *dash = 0;
-        if (LoadLang(name)) return;                     // de.ini
-        if (LoadLangByPrefix(name)) return;             // de-AT -> de-DE.ini
-    }
-}
-
-static const wchar_t* T(const wchar_t* en) {
-    if (!en || !g_strings[0]) return en;
-    // Linear scan of the double-null-terminated block. Fifteen entries, walked once when a menu
-    // or the About box is built and never per frame -- an index would cost more code than it
-    // saves.
-    for (const wchar_t* p = g_strings; *p; p += wcslen(p) + 1) {
-        const wchar_t* eq = wcschr(p, L'=');
-        if (!eq || eq == p) continue;  // no key, or no value: skip
-        if (CompareStringOrdinal(p, (int)(eq - p), en, -1, TRUE) != CSTR_EQUAL) continue;
-        // An empty value is a string a translator has not filled in yet. That is a normal state
-        // of a shipped file, and it means English.
-        return eq[1] ? eq + 1 : en;
-    }
-    return en;
 }
 
 // Read the clock's current layout back out and remember it. Called when a drag ends. The
@@ -504,7 +389,7 @@ static void InitDarkMode() {
 struct OtherApp {
     int icon;
     const wchar_t* name;
-    const wchar_t* blurb;
+    UINT blurb;            // IDS_ id: the name is a product, the blurb is copy
     const wchar_t* store;  // ms-windows-store: opens the Store app
     const wchar_t* web;    // https: used only if that scheme is dead
 };
@@ -518,16 +403,13 @@ struct OtherApp {
 // cid is the campaign id Partner Center reports on, attributing installs within 24 hours of the
 // click. Same value on both URLs so either route attributes the same, and named for the surface.
 static const OtherApp OTHER_APPS[] = {
-    { IDI_FLYPHOTOS, L"FlyPhotos",
-      L"Fast, lightweight, and minimalist photo viewer designed for the modern Windows",
+    { IDI_FLYPHOTOS, L"FlyPhotos", IDS_BLURB_FLYPHOTOS,
       L"ms-windows-store://pdp/?productid=9PMSK128V1QT&cid=DeskFlipAbout",
       L"https://apps.microsoft.com/detail/9pmsk128v1qt?cid=DeskFlipAbout&mode=full" },
-    { IDI_LETITRAIN, L"Let It Rain",
-      L"Desktop Rain and Snow Simulator for Windows",
+    { IDI_LETITRAIN, L"Let It Rain", IDS_BLURB_LETITRAIN,
       L"ms-windows-store://pdp/?productid=9P1H1VCJHJZP&cid=DeskFlipAbout",
       L"https://apps.microsoft.com/detail/9p1h1vcjhjzp?cid=DeskFlipAbout&mode=full" },
-    { IDI_DESKTICK, L"DeskTick",
-      L"Customizable, minimal, transparent desktop clock widgets for Windows",
+    { IDI_DESKTICK, L"DeskTick", IDS_BLURB_DESKTICK,
       L"ms-windows-store://pdp/?productid=9NQGFVNBX4WJ&cid=DeskFlipAbout",
       L"https://apps.microsoft.com/detail/9nqgfvnbx4wj?cid=DeskFlipAbout&mode=full" },
 };
@@ -619,15 +501,15 @@ static void AboutBuild() {
     // Assembled from three pieces rather than translated whole, because only the last piece is
     // prose. Hand a translator the finished sentence and every one of them has to retype the
     // holder inside their value, where a typo is a wrong copyright notice -- and rebranding would
-    // drop all seventeen translations at once, the key having changed. So the holder comes from
-    // VER_COMPANY untranslated and only the sentence goes through T().
+    // mean touching all seventeen translations. So the holder comes from VER_COMPANY untranslated
+    // and only the sentence goes through T().
     wchar_t copyright[160];
-    swprintf_s(copyright, L"\u00A9 %s. %s", _CRT_WIDE(VER_COMPANY), T(L"All rights reserved."));
+    swprintf_s(copyright, L"\u00A9 %s. %s", _CRT_WIDE(VER_COMPANY), T(IDS_ALL_RIGHTS_RESERVED));
     y = AboutText(copyright, g_aFont, x, y, w, A(18));
 
     // Height measured rather than fixed at one line, for the same reason the blurbs below are:
     // this sentence is short in English and not in every language.
-    const wchar_t* feedback = T(L"Report issues or send feedback to");
+    const wchar_t* feedback = T(IDS_FEEDBACK);
     y = AboutText(feedback, g_aFont, x, y + A(14), w,
         std::max(A(18), (int)TextExtent(g_about, g_aFont, feedback, w).bottom));
     // A SysLink rather than blue static text: it gets the hand cursor, keyboard focus and the
@@ -639,7 +521,7 @@ static void AboutBuild() {
     SendMessageW(link, WM_SETFONT, (WPARAM)g_aFont, TRUE);
     y += A(20);
 
-    y = AboutText(T(L"Other apps"), g_aHead, x, y + A(18), w, A(20)) + A(6);
+    y = AboutText(T(IDS_OTHER_APPS), g_aHead, x, y + A(18), w, A(20)) + A(6);
 
     for (int i = 0; i < (int)_countof(OTHER_APPS); i++) {
         g_aIcons[i] = (HICON)LoadImageW(g_inst, MAKEINTRESOURCEW(OTHER_APPS[i].icon),
@@ -764,7 +646,7 @@ static void AboutShow(HWND owner) {
 
     RECT rc;
     GetWindowRect(owner, &rc);
-    g_about = CreateWindowExW(0, L"DeskFlipAbout", T(L"About DeskFlip"), ABOUT_STYLE,
+    g_about = CreateWindowExW(0, L"DeskFlipAbout", T(IDS_ABOUT_TITLE), ABOUT_STYLE,
         rc.right + 12, rc.top, 100, 100, nullptr, nullptr, g_inst, nullptr);
     if (!g_about) return;
     ThemeCaption(g_about);
@@ -804,27 +686,20 @@ static void ShowContextMenu(HWND hwnd) {
     EndGripDrag(hwnd, false);
 
     // Grouped: what the clock shows, then where it lives, then the way out.
-    //
-    // Every label goes through T(). The English literal IS the key the lang\*.ini files are
-    // written against, so editing one here silently drops its translations.
     const HMENU menu = CreatePopupMenu();
-    AppendMenuW(menu, MF_STRING | (g_settings.showSeconds ? MF_CHECKED : 0), MENU_SECONDS, T(L"Show seconds"));
-    AppendMenuW(menu, MF_STRING | (g_settings.lightMode ? MF_CHECKED : 0), MENU_LIGHT, T(L"Light mode"));
-    AppendMenuW(menu, MF_STRING | (g_resizeMode ? MF_CHECKED : 0), MENU_RESIZE, T(L"Resize"));
+    AppendMenuW(menu, MF_STRING | (g_settings.showSeconds ? MF_CHECKED : 0), MENU_SECONDS, T(IDS_SHOW_SECONDS));
+    AppendMenuW(menu, MF_STRING | (g_settings.lightMode ? MF_CHECKED : 0), MENU_LIGHT, T(IDS_LIGHT_MODE));
+    AppendMenuW(menu, MF_STRING | (g_resizeMode ? MF_CHECKED : 0), MENU_RESIZE, T(IDS_RESIZE));
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     // The first and third are ours to remember (DeskFlip.ini); the second is a registry value
     // Windows itself reads, so it is asked for fresh every time this menu opens -- the user may
     // well have unticked it in Task Manager's Startup tab since.
-    AppendMenuW(menu, MF_STRING | (g_settings.topmost ? MF_CHECKED : 0), MENU_TOPMOST, T(L"Always on top"));
-    AppendMenuW(menu, MF_STRING | (StartupEnabled() ? MF_CHECKED : 0), MENU_STARTUP, T(L"Start with Windows"));
-    AppendMenuW(menu, MF_STRING | (g_settings.tray ? MF_CHECKED : 0), MENU_TRAY, T(L"Show in system tray"));
+    AppendMenuW(menu, MF_STRING | (g_settings.topmost ? MF_CHECKED : 0), MENU_TOPMOST, T(IDS_ALWAYS_ON_TOP));
+    AppendMenuW(menu, MF_STRING | (StartupEnabled() ? MF_CHECKED : 0), MENU_STARTUP, T(IDS_START_WITH_WINDOWS));
+    AppendMenuW(menu, MF_STRING | (g_settings.tray ? MF_CHECKED : 0), MENU_TRAY, T(IDS_SHOW_IN_TRAY));
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-    // The ellipsis is a universal character name because this file is ASCII-only: MSVC reads a
-    // BOM-less .cpp in the system codepage, so a pasted U+2026 would reach the menu as mojibake.
-    // It is part of the T() key too, and lang\*.ini spells it as a real U+2026 -- those files are
-    // UTF-16 and can.
-    AppendMenuW(menu, MF_STRING, MENU_ABOUT, T(L"About DeskFlip\u2026"));
-    AppendMenuW(menu, MF_STRING, MENU_EXIT, T(L"Exit"));
+    AppendMenuW(menu, MF_STRING, MENU_ABOUT, T(IDS_MENU_ABOUT));
+    AppendMenuW(menu, MF_STRING, MENU_EXIT, T(IDS_EXIT));
 
     POINT pt;
     GetCursorPos(&pt);

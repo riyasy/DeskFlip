@@ -77,11 +77,6 @@
     <Content Include="..\DeskFlip\assets\*.ttf;..\DeskFlip\assets\*.txt">
       <Link>DeskFlip\assets\%(Filename)%(Extension)</Link>
     </Content>
-    <!-- The translations, same story: LocInit reads lang\ from the exe's own folder, so they have
-         to land beside it inside the package. Without this the MSIX ships English-only. -->
-    <Content Include="..\DeskFlip\lang\*.ini">
-      <Link>DeskFlip\lang\%(Filename)%(Extension)</Link>
-    </Content>
     <!-- DeskFlip's own terms, so the package carries what the release zip carries. GPLv3 section 4
          asks that a copy travel with the program, and the zip has had one since v1.0.1. -->
     <Content Include="..\..\LICENSE">
