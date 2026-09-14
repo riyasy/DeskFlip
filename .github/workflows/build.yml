@@ -37,7 +37,7 @@ jobs:
         id: ver
         shell: pwsh
         run: |
-          $v = (Select-String src\DeskFlip\version.h-Pattern '#define VER_DISPLAY\s+"(.+)"').Matches[0].Groups[1].Value
+          $v = (Select-String src\DeskFlip\version.h -Pattern '#define VER_DISPLAY\s+"(.+)"').Matches[0].Groups[1].Value
           "ver=$v" >> $env:GITHUB_OUTPUT
 
       # /t:DeskFlip, or the solution's MSIX project builds the exe three times over.
