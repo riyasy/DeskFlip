@@ -1,12 +1,13 @@
 #include <windows.h>
 #include <winver.h>
 #include "resource.h"
+#include "version.h"
 
 // The exe's identity plus four icons. The two menu bitmaps that used to live here went with the
 // options dialog: the context menu's items carry check marks now, and a check mark and a per-item
 // bitmap share the same gutter in a Win32 menu.
 //
-// Everything in the VERSIONINFO block comes from resource.h so the resource and the About box
+// Everything in the VERSIONINFO block comes from version.h so the resource and the About box
 // cannot drift apart.
 VS_VERSION_INFO VERSIONINFO
     FILEVERSION    VER_NUMBER

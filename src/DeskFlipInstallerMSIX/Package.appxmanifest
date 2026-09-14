@@ -9,12 +9,12 @@
 
   <!-- Name and Publisher must match what Partner Center reserved for this app; the Publisher CN
        is the account's publisher id, the same one DeskTick and Let It Rain ship under. Version
-       has to be kept in step with DeskFlip\resource.h by hand (XML cannot include a header),
+       has to be kept in step with DeskFlip\version.h by hand (XML cannot include a header),
        and the Store requires the fourth part to stay 0. -->
   <Identity
     Name="RYFTools.DeskFlip"
     Publisher="CN=44A50C10-C1BE-4575-B17F-07954C8C2229"
-    Version="1.0.1.0" />
+    Version="1.0.2.0" />
 
   <Properties>
     <DisplayName>DeskFlip</DisplayName>

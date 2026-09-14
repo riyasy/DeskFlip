@@ -118,6 +118,7 @@
     <ClInclude Include="clockwindow.h" />
     <ClInclude Include="loc.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="version.h" />
     <ClInclude Include="Localization\strings.h" />
   </ItemGroup>
 

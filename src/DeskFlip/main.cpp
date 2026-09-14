@@ -13,6 +13,7 @@
 #include "clockwindow.h"
 #include "loc.h"
 #include "resource.h"
+#include "version.h"
 
 #include <appmodel.h>  // GetCurrentPackageFullName -- packaged or loose exe
 #include <commctrl.h>
@@ -43,6 +44,7 @@
 
 #define WM_TRAYICON (WM_APP + 1)
 #define WM_ENDRESIZE (WM_APP + 2)  // posted by the outside-click hook; see ApplyResizeMode
+constexpr UINT_PTR TIMER_MENU = 1;  // the only WM_TIMER in the app; see ShowContextMenu
 constexpr UINT TRAY_UID = 787;
 constexpr int MENU_SECONDS = 1;
 constexpr int MENU_TOPMOST = 2;
@@ -167,13 +169,22 @@ static HWND FindDesktopView() {
     return result;
 }
 
-// Topmost unless the user asked for the clock to be coverable. Owned by the desktop's icon
-// view unconditionally: that's what lets a window this small survive Show Desktop at all
-// (DateLine is the proof -- small window, always owned, never hidden by Win+D), not just the
-// not-topmost case. The setting only changes the topmost bit.
+// Owned by the desktop's icon view unconditionally: that's what lets a window this small survive
+// Show Desktop at all (DateLine is the proof -- small window, always owned, never hidden by
+// Win+D), not just the not-topmost case. The setting only changes the z-order.
+//
+// Off is HWND_BOTTOM, not HWND_NOTOPMOST: that one reads like "leave it be" and is a raise --
+// "above all non-topmost windows", i.e. in front of whatever launched us. A desktop clock belongs
+// behind every application, and it cannot sink below the wallpaper, because Windows keeps an
+// owned window above its owner and ours is DefView. HWND_BOTTOM also strips WS_EX_TOPMOST by
+// itself, so one call still serves both directions of the toggle.
+//
+// This is the one function that owns the z-order, and anything that raises the window must call
+// it afterwards. Today that is two things: ShowWindow at startup and the menu's
+// SetForegroundWindow.
 static void ApplyTopmost(HWND hwnd) {
     SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, (LONG_PTR)FindDesktopView());
-    SetWindowPos(hwnd, g_settings.topmost ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
+    SetWindowPos(hwnd, g_settings.topmost ? HWND_TOPMOST : HWND_BOTTOM, 0, 0, 0, 0,
         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
 
@@ -489,7 +500,7 @@ static void AboutBuild() {
     const int x = A(A_MARGIN), w = A(A_WIDTH) - 2 * A(A_MARGIN);
     int y = A(A_MARGIN);
 
-    // From resource.h, so this box and the exe's own properties cannot disagree. _CRT_WIDE makes
+    // From version.h, so this box and the exe's own properties cannot disagree. _CRT_WIDE makes
     // a wide literal of the narrow macro the .rc needs.
     // The product name and the version are identity, not copy: untranslated, like the app names
     // in OTHER_APPS below.
@@ -705,9 +716,19 @@ static void ShowContextMenu(HWND hwnd) {
     GetCursorPos(&pt);
     SetForegroundWindow(hwnd);
     g_menuUp = true;
+    // TrackPopupMenu runs its own message loop until the menu closes, so wWinMain's loop -- the
+    // only thing that ticks and renders -- never runs and the cards would freeze. A user timer is
+    // dispatched by that nested loop, so one lives exactly as long as the menu does; everywhere
+    // else idle stays timer-free. 250 ms, not 1000: its phase is wherever the menu opened, so a
+    // one-second period could sit a second off the beat. WM_TIMER speeds it up during a flip.
+    SetTimer(hwnd, TIMER_MENU, 250, nullptr);
     const int cmd = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, 0, hwnd, nullptr);
+    KillTimer(hwnd, TIMER_MENU);
     g_menuUp = false;
     DestroyMenu(menu);
+    // SetForegroundWindow above raised us; put it back. Ahead of the commands, so MENU_TOPMOST's
+    // own call has the last word.
+    ApplyTopmost(hwnd);
 
     switch (cmd) {
     case MENU_SECONDS:
@@ -907,6 +928,28 @@ static void EndGripDrag(HWND h, bool keep) {
     if (wasDragging && keep) { CaptureLayout(h); SaveSettings(); }
 }
 
+// Seconds on a monotonic clock, for the flip animation. Only differences are ever taken.
+static double Now() {
+    static const double freq = [] { LARGE_INTEGER f; QueryPerformanceFrequency(&f); return double(f.QuadPart); }();
+    LARGE_INTEGER c;
+    QueryPerformanceCounter(&c);
+    return double(c.QuadPart) / freq;
+}
+
+// Advance the cards and draw only if something moved. The main loop's body after the drain, and
+// also what the menu timer runs while TrackPopupMenu's loop has the thread.
+static void TickAndRender(HWND hwnd) {
+    const double now = Now();
+    const bool changed = g_clock.Tick(now);
+
+    // Render purely on demand. The waitable object inside Render() handles the vsync queue
+    // pacing while animating; an idle desktop does zero GPU work.
+    if (!IsIconic(hwnd) && (changed || g_clock.Animating() || g_needsPaint)) {
+        g_clock.Render(now);
+        g_needsPaint = false;
+    }
+}
+
 static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     // A registered message has no compile-time id, so it cannot be a case label. Registered once
     // on first use; 0 means the OS refused, and no real message id is 0, so the test stays safe.
@@ -1062,6 +1105,14 @@ static LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
         return 0;
     case WM_ERASEBKGND:
         return 1;  // we own every pixel; letting GDI flash the background causes tearing
+    case WM_TIMER:
+        if (wp == TIMER_MENU) {
+            TickAndRender(h);
+            // A flip needs frames, not quarter-second samples: as fast as a user timer goes for
+            // the 0.25 s a flip runs (Render's vsync wait paces it), then back to 250 ms.
+            SetTimer(h, TIMER_MENU, g_clock.Animating() ? USER_TIMER_MINIMUM : 250, nullptr);
+        }
+        return 0;
     case WM_TRAYICON:
         if (lp == WM_LBUTTONUP || lp == WM_CONTEXTMENU || lp == WM_RBUTTONUP) ShowContextMenu(h);
         return 0;
@@ -1157,18 +1208,9 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, LPWSTR, int) {
     // DPI of the monitor the clock actually opened on, not the primary one.
     g_dpi = GetDpiForWindow(hwnd);
 
-    ApplyTopmost(hwnd);
     ClampToMonitor(hwnd);  // a saved position can outlive the monitor it was saved on
     ShowWindow(hwnd, SW_SHOWNOACTIVATE);
-
-    LARGE_INTEGER freq, start;
-    QueryPerformanceFrequency(&freq);
-    QueryPerformanceCounter(&start);
-    auto Now = [&] {
-        LARGE_INTEGER c;
-        QueryPerformanceCounter(&c);
-        return double(c.QuadPart - start.QuadPart) / double(freq.QuadPart);
-        };
+    ApplyTopmost(hwnd);    // after the show: showing raises
 
     HANDLE timer = CreateWaitableTimerExW(nullptr, nullptr,
         CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
@@ -1211,16 +1253,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, LPWSTR, int) {
 
         // Applies at most once per drained batch, not once per WM_MOUSEMOVE -- see FlushDrag.
         FlushDrag(hwnd);
-
-        const double now = Now();
-        const bool changed = g_clock.Tick(now);
-
-        // Render purely on demand. The waitable object inside Render() handles the vsync queue
-        // pacing while animating; an idle desktop does zero GPU work.
-        if (!IsIconic(hwnd) && (changed || g_clock.Animating() || g_needsPaint)) {
-            g_clock.Render(now);
-            g_needsPaint = false;
-        }
+        TickAndRender(hwnd);
     }
 
     CloseHandle(timer);
