@@ -142,6 +142,7 @@
     <Image Include="res\desktick.ico" />
     <Image Include="res\flyphotos.ico" />
     <Image Include="res\letitrain.ico" />
+    <Image Include="res\wtick.ico" />
   </ItemGroup>
 
   <ItemGroup>

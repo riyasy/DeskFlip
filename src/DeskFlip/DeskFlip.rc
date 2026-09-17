@@ -47,8 +47,9 @@ END
 IDI_DESKFLIP   ICON    "res\\deskflip.ico"
 
 // The About box's "Other apps" list. Each wraps a single 48x48 PNG frame taken from that app's
-// own MSIX Square44x44Logo, kept as an icon rather than raw PNG data so LoadImageW can pick a
-// frame for the monitor's DPI with no WIC decode of our own.
+// own icon, kept as an icon rather than raw PNG data so LoadImageW can scale it for the
+// monitor's DPI with no WIC decode of our own.
 IDI_FLYPHOTOS   ICON    "res\\flyphotos.ico"
 IDI_LETITRAIN   ICON    "res\\letitrain.ico"
+IDI_WTICK       ICON    "res\\wtick.ico"
 IDI_DESKTICK    ICON    "res\\desktick.ico"

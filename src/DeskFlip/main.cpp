@@ -413,6 +413,10 @@ struct OtherApp {
 //
 // cid is the campaign id Partner Center reports on, attributing installs within 24 hours of the
 // click. Same value on both URLs so either route attributes the same, and named for the surface.
+//
+// Every app lists the others in one order -- FlyPhotos, Let It Rain, WTick, DeskTick, DeskFlip,
+// less itself -- with the same blurb wording, so keep that order and those strings in step with
+// the other four apps' About boxes.
 static const OtherApp OTHER_APPS[] = {
     { IDI_FLYPHOTOS, L"FlyPhotos", IDS_BLURB_FLYPHOTOS,
       L"ms-windows-store://pdp/?productid=9PMSK128V1QT&cid=DeskFlipAbout",
@@ -420,6 +424,9 @@ static const OtherApp OTHER_APPS[] = {
     { IDI_LETITRAIN, L"Let It Rain", IDS_BLURB_LETITRAIN,
       L"ms-windows-store://pdp/?productid=9P1H1VCJHJZP&cid=DeskFlipAbout",
       L"https://apps.microsoft.com/detail/9p1h1vcjhjzp?cid=DeskFlipAbout&mode=full" },
+    { IDI_WTICK, L"WTick", IDS_BLURB_WTICK,
+      L"ms-windows-store://pdp/?productid=9P039TR9SW9S&cid=DeskFlipAbout",
+      L"https://apps.microsoft.com/detail/9p039tr9sw9s?cid=DeskFlipAbout&mode=full" },
     { IDI_DESKTICK, L"DeskTick", IDS_BLURB_DESKTICK,
       L"ms-windows-store://pdp/?productid=9NQGFVNBX4WJ&cid=DeskFlipAbout",
       L"https://apps.microsoft.com/detail/9nqgfvnbx4wj?cid=DeskFlipAbout&mode=full" },

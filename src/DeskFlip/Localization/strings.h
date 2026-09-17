@@ -16,4 +16,5 @@
 #define IDS_OTHER_APPS           1035
 #define IDS_BLURB_FLYPHOTOS      1036
 #define IDS_BLURB_LETITRAIN      1037
-#define IDS_BLURB_DESKTICK       1038
+#define IDS_BLURB_WTICK          1038
+#define IDS_BLURB_DESKTICK       1039
